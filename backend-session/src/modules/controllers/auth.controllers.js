@@ -7,16 +7,6 @@ export const Register = async (req,res) => {
 
     try {
         const connection = await newConnection()
-        
-        // Verificar si el usuario ya existe
-        const [userExists] = await connection.query(
-            `SELECT * FROM users WHERE username =?`, 
-            [username]
-        );
-        
-        if (userExists) {
-            return res.status(400).json({ msg: 'El nombre de usuario ya está en uso' });
-        }
 
         // Encriptar la contraseña
         const salt = await bcrypt.genSalt(10);
@@ -39,21 +29,28 @@ export const Register = async (req,res) => {
 // Ruta para manejar el inicio de sesión
 export const Login = async  (req, res) => {
     const { username, password } = req.body;
-    
+    console.log(username, password);
 
     // Buscar usuario
     try {
         const connection = await newConnection();
-        const [userSearch] = await connection.query(
-            `SELECT * FROM users WHERE username = ?`, 
-            [username]
+        const [[user]] = await connection.query(
+            `SELECT * FROM users WHERE username = ? AND password = ? LIMIT 1;`, 
+            [username,password]
         );
-
-        if (userSearch.length === 0 || userSearch[0].password !== password) {
-            return res.status(401).json({msg: 'Credenciales incorrectas'});
+        console.log('usuario',user);
+        if (user) {
+            // Guardar información del usuario en la sesión
+            req.session.userId = user.id;
+            req.session.username = user.username;
+    
+            return res.json({ 
+                message: 'Inicio de sesión exitoso', 
+                user: { id: user.id, username: user.username } });
         } else {
-            return res.status(200).json({msg: 'Inicio de sesión exitoso'});
+            return res.status(401).json({ message: 'Credenciales incorrectas' });
         }
+
     } catch (error) {
         console.error('Ocurrió un error', error);
         res.status(500).json({ msg: 'Internal server error', error: error.message });
@@ -62,6 +59,7 @@ export const Login = async  (req, res) => {
 
 // Ruta para obtener los datos de la sesión
 export const Session = async (req, res) => {
+    console.log(req.session);
     if (req.session.userId) {
         return res.json({ 
             loggedIn: true, 
