@@ -4,11 +4,10 @@
         credentials: 'include' // Importante para enviar las cookies de sesión
     })
 
-    console.log({ response })
-
 
     if (response.ok) {
         const data = await response.json();
+        console.log(data);
         document.getElementById('user-name').innerText = data.user.username;
     } else {
         // Redirigir al usuario a la página de inicio de sesión
@@ -23,7 +22,6 @@ document.getElementById('logout').addEventListener('click', async () => {
         method: 'POST',
         credentials: 'include'
     })
-    
     if (!response.ok) {
         throw new Error('Error al cerrar sesión');
     } else {
